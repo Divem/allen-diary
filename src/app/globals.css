@@ -134,6 +134,11 @@ body {
   .diary-card:active {
     transform: scale(0.995);
   }
+  
+  /* 移动端正文粗体 */
+  .diary-card p {
+    font-weight: 600;
+  }
 }
 
 /* 标签移动端优化 */
