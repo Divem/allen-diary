@@ -10,14 +10,12 @@
   --secondary: #64748b;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #e5e5e5;
-    --card-bg: #1a1a1a;
-    --card-hover: #262626;
-    --border: #262626;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #e5e5e5;
+  --card-bg: #1a1a1a;
+  --card-hover: #262626;
+  --border: #262626;
 }
 
 body {
@@ -25,6 +23,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   line-height: 1.6;
+  transition: background 0.3s, color 0.3s;
 }
 
 /* 滚动条 */
@@ -73,75 +72,37 @@ body {
   transition: all 0.2s;
 }
 
-.tag-product { background: rgb(239 246 255); color: rgb(29 78 216); }
-@media (prefers-color-scheme: dark) {
-  .tag-product { background: rgb(30 58 138 / 0.3); color: rgb(147 197 253); }
-}
+/* 浅色模式标签 */
+.tag-product { background: #eff6ff; color: #1d4ed8; }
+.tag-insight { background: #faf5ff; color: #6b21a8; }
+.tag-internet { background: #f0fdf4; color: #166534; }
+.tag-tech { background: #ecfeff; color: #164e63; }
+.tag-book { background: #fffbeb; color: #78350f; }
+.tag-life { background: #f9fafb; color: #374151; }
+.tag-humor { background: #fdf2f8; color: #be185d; }
+.tag-repost { background: #eef2ff; color: #4338ca; }
+.tag-fanfou { background: #ffedd5; color: #c2410c; }
+.tag-apple { background: #f8fafc; color: #334155; }
+.tag-google { background: #fef2f2; color: #b91c1c; }
+.tag-wechat { background: #ecfdf5; color: #059669; }
+.tag-philosophy { background: #faf5ff; color: #6d28d9; }
+.tag-management { background: #f0fdfa; color: #0f766e; }
 
-.tag-insight { background: rgb(250 245 255); color: rgb(107 33 168); }
-@media (prefers-color-scheme: dark) {
-  .tag-insight { background: rgb(88 28 135 / 0.3); color: rgb(216 180 254); }
-}
-
-.tag-internet { background: rgb(240 253 244); color: rgb(22 101 52); }
-@media (prefers-color-scheme: dark) {
-  .tag-internet { background: rgb(22 101 52 / 0.3); color: rgb(134 239 172); }
-}
-
-.tag-tech { background: rgb(236 254 255); color: rgb(22 78 99); }
-@media (prefers-color-scheme: dark) {
-  .tag-tech { background: rgb(22 78 99 / 0.3); color: rgb(165 243 252); }
-}
-
-.tag-book { background: rgb(255 251 235); color: rgb(120 53 15); }
-@media (prefers-color-scheme: dark) {
-  .tag-book { background: rgb(120 53 15 / 0.3); color: rgb(253 230 138); }
-}
-
-.tag-life { background: rgb(249 250 251); color: rgb(55 65 81); }
-@media (prefers-color-scheme: dark) {
-  .tag-life { background: rgb(31 41 55); color: rgb(209 213 219); }
-}
-
-.tag-humor { background: rgb(253 242 248); color: rgb(190 24 93); }
-@media (prefers-color-scheme: dark) {
-  .tag-humor { background: rgb(190 24 93 / 0.3); color: rgb(251 207 232); }
-}
-
-.tag-repost { background: rgb(238 242 255); color: rgb(67 56 202); }
-@media (prefers-color-scheme: dark) {
-  .tag-repost { background: rgb(55 48 163 / 0.3); color: rgb(196 181 254); }
-}
-
-.tag-fanfou { background: rgb(255 237 213); color: rgb(194 65 12); }
-@media (prefers-color-scheme: dark) {
-  .tag-fanfou { background: rgb(194 65 12 / 0.3); color: rgb(253 186 116); }
-}
-
-.tag-apple { background: rgb(248 250 252); color: rgb(51 65 85); }
-@media (prefers-color-scheme: dark) {
-  .tag-apple { background: rgb(30 41 59); color: rgb(203 213 225); }
-}
-
-.tag-google { background: rgb(254 242 242); color: rgb(185 28 28); }
-@media (prefers-color-scheme: dark) {
-  .tag-google { background: rgb(127 29 29 / 0.3); color: rgb(254 202 202); }
-}
-
-.tag-wechat { background: rgb(236 253 245); color: rgb(5 150 105); }
-@media (prefers-color-scheme: dark) {
-  .tag-wechat { background: rgb(6 95 70 / 0.3); color: rgb(167 243 208); }
-}
-
-.tag-philosophy { background: rgb(250 245 255); color: rgb(109 40 217); }
-@media (prefers-color-scheme: dark) {
-  .tag-philosophy { background: rgb(88 28 135 / 0.3); color: rgb(216 180 254); }
-}
-
-.tag-management { background: rgb(240 253 250); color: rgb(20 184 166); }
-@media (prefers-color-scheme: dark) {
-  .tag-management { background: rgb(19 78 74 / 0.3); color: rgb(153 246 228); }
-}
+/* 深色模式标签 */
+.dark .tag-product { background: rgb(30 58 138 / 0.3); color: rgb(147 197 253); }
+.dark .tag-insight { background: rgb(88 28 135 / 0.3); color: rgb(216 180 254); }
+.dark .tag-internet { background: rgb(22 101 52 / 0.3); color: rgb(134 239 172); }
+.dark .tag-tech { background: rgb(22 78 99 / 0.3); color: rgb(165 243 252); }
+.dark .tag-book { background: rgb(120 53 15 / 0.3); color: rgb(253 230 138); }
+.dark .tag-life { background: rgb(31 41 55); color: rgb(209 213 219); }
+.dark .tag-humor { background: rgb(190 24 93 / 0.3); color: rgb(251 207 232); }
+.dark .tag-repost { background: rgb(55 48 163 / 0.3); color: rgb(196 181 254); }
+.dark .tag-fanfou { background: rgb(194 65 12 / 0.3); color: rgb(253 186 116); }
+.dark .tag-apple { background: rgb(30 41 59); color: rgb(203 213 225); }
+.dark .tag-google { background: rgb(127 29 29 / 0.3); color: rgb(254 202 202); }
+.dark .tag-wechat { background: rgb(6 95 70 / 0.3); color: rgb(167 243 208); }
+.dark .tag-philosophy { background: rgb(88 28 135 / 0.3); color: rgb(216 180 254); }
+.dark .tag-management { background: rgb(19 78 74 / 0.3); color: rgb(153 246 228); }
 
 /* 日记卡片 */
 .diary-card {

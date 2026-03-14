@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import diaryData from '@/data/diary.json'
 import statsData from '@/data/stats.json'
 import ShareCard from '@/components/ShareCard'
+import ThemeToggle from '@/components/ThemeToggle'
 
 interface DiaryEntry {
   id: number
@@ -149,7 +150,7 @@ export default function HomePage() {
               <div>
                 <h1 className="text-xl font-bold">张小龙饭否日记</h1>
                 <p className="text-xs text-[var(--secondary)]">
-                  {statsData.totalEntries} 条思考 · {statsData.months.length} 个月份
+                  我所说的，都是错的
                 </p>
               </div>
             </div>
@@ -164,6 +165,7 @@ export default function HomePage() {
                 />
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--secondary)]">🔍</span>
               </div>
+              <ThemeToggle />
             </div>
           </div>
         </div>
@@ -266,8 +268,8 @@ export default function HomePage() {
 
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-16 text-center">
-                      <div className="text-2xl font-bold text-[var(--primary)]">
-                        {String(entry.month).padStart(2, '0')}
+                      <div className="text-xl font-bold text-[var(--primary)]">
+                        {entry.month}/{entry.date.split('-')[2].replace(/^0/, '')}
                       </div>
                       <div className="text-xs text-[var(--secondary)]">
                         {entry.year}
