@@ -65,7 +65,6 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
         logging: false,
         useCORS: true,
         allowTaint: true,
-        letterRendering: true, // 更好的文字渲染
       })
 
       const link = document.createElement('a')

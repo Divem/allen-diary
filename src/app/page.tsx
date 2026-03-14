@@ -52,7 +52,7 @@ export default function HomePage() {
   // 按月分组
   const entriesByMonth = useMemo(() => {
     const grouped: Record<string, DiaryEntry[]> = {}
-    diaryData.forEach((entry: DiaryEntry) => {
+    ;(diaryData as DiaryEntry[]).forEach((entry) => {
       const key = `${entry.year}-${String(entry.month).padStart(2, '0')}`
       if (!grouped[key]) grouped[key] = []
       grouped[key].push(entry)
@@ -70,7 +70,7 @@ export default function HomePage() {
 
   // 过滤后的条目
   const filteredEntries = useMemo(() => {
-    let entries: DiaryEntry[] = diaryData
+    let entries: DiaryEntry[] = diaryData as DiaryEntry[]
 
     // 按月份筛选
     if (selectedMonth !== 'all') {
