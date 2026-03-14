@@ -108,15 +108,40 @@ body {
 .diary-card {
   background: var(--card-bg);
   border-radius: 0.75rem;
-  padding: 1.5rem;
+  padding: 1rem;
   border: 1px solid var(--border);
   transition: all 0.3s;
+}
+
+@media (min-width: 640px) {
+  .diary-card {
+    padding: 1.5rem;
+  }
 }
 
 .diary-card:hover {
   border-color: var(--primary);
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   transform: translateY(-2px);
+}
+
+/* 移动端优化 */
+@media (max-width: 1023px) {
+  .diary-card {
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
+  }
+
+  .diary-card:active {
+    transform: scale(0.995);
+  }
+}
+
+/* 标签移动端优化 */
+@media (max-width: 639px) {
+  .tag {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+  }
 }
 
 /* 月份导航 */
