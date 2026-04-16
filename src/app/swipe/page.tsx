@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import diaryData from '@/data/diary.json'
-import statsData from '@/data/stats.json'
 import ShareCard from '@/components/ShareCard'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -40,56 +39,137 @@ const tagClassMap: Record<string, string> = {
 
 const SWIPE_THRESHOLD = 80
 
+function Card({
+  entry,
+  onShare,
+}: {
+  entry: DiaryEntry
+  onShare: (e: React.MouseEvent) => void
+}) {
+  const formatDate = (entry: DiaryEntry) => {
+    return `${entry.year}年${entry.month}月${entry.date.split('-')[2].replace(/^0/, '')}日`
+  }
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'repost': return '转发'
+      case 'reply': return '回复'
+      default: return '原创'
+    }
+  }
+
+  return (
+    <div className="w-full max-w-md bg-[var(--card-bg)] rounded-2xl border border-[var(--border)] shadow-xl p-6 sm:p-8 relative select-none h-full flex flex-col">
+      <button
+        onClick={onShare}
+        className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10"
+      >
+        <svg className="w-5 h-5 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+        </svg>
+      </button>
+
+      <div className="flex items-center gap-2 mb-6 text-sm text-[var(--secondary)]">
+        <span>{formatDate(entry)}</span>
+        <span>·</span>
+        <span>#{entry.num}</span>
+        <span>·</span>
+        <span className="text-[var(--primary)]">{getTypeLabel(entry.type)}</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <p className="text-xl sm:text-2xl leading-relaxed mb-8 font-medium break-words">
+          {entry.content}
+        </p>
+      </div>
+
+      {entry.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-auto pt-4">
+          {entry.tags.map(tag => (
+            <span
+              key={tag}
+              className={`tag ${tagClassMap[tag] || 'tag-life'} text-xs`}
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {entry.extraInfo && (
+        <div className="mt-4 pt-4 border-t border-[var(--border)] text-sm text-[var(--secondary)]">
+          {entry.extraInfo}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function SwipePage() {
   const entries = useMemo(() => (diaryData as DiaryEntry[]).slice().reverse(), [])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [offsetX, setOffsetX] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
-  const [direction, setDirection] = useState<'left' | 'right' | null>(null)
-  const [shareEntry, setShareEntry] = useState<DiaryEntry | null>(null)
   const [startX, setStartX] = useState(0)
 
+  const [phase, setPhase] = useState<'idle' | 'exiting'>('idle')
+  const [slideDir, setSlideDir] = useState<'left' | 'right'>('left')
+  const [pendingIndex, setPendingIndex] = useState<number | null>(null)
+
+  const [shareEntry, setShareEntry] = useState<DiaryEntry | null>(null)
+
   const currentEntry = entries[currentIndex]
+  const pendingEntry = pendingIndex !== null ? entries[pendingIndex] : null
+
+  const ANIMATION_DURATION = 320
 
   const goNext = useCallback(() => {
-    if (currentIndex < entries.length - 1) {
-      setDirection('left')
+    if (currentIndex < entries.length - 1 && phase === 'idle') {
+      setPendingIndex(currentIndex + 1)
+      setSlideDir('left')
+      setPhase('exiting')
+      setOffsetX(0)
       setTimeout(() => {
         setCurrentIndex(i => i + 1)
-        setOffsetX(0)
-        setDirection(null)
-      }, 200)
+        setPhase('idle')
+        setPendingIndex(null)
+      }, ANIMATION_DURATION)
     } else {
       setOffsetX(0)
     }
-  }, [currentIndex, entries.length])
+  }, [currentIndex, entries.length, phase])
 
   const goPrev = useCallback(() => {
-    if (currentIndex > 0) {
-      setDirection('right')
+    if (currentIndex > 0 && phase === 'idle') {
+      setPendingIndex(currentIndex - 1)
+      setSlideDir('right')
+      setPhase('exiting')
+      setOffsetX(0)
       setTimeout(() => {
         setCurrentIndex(i => i - 1)
-        setOffsetX(0)
-        setDirection(null)
-      }, 200)
+        setPhase('idle')
+        setPendingIndex(null)
+      }, ANIMATION_DURATION)
     } else {
       setOffsetX(0)
     }
-  }, [currentIndex])
+  }, [currentIndex, phase])
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (phase !== 'idle') return
     setIsDragging(true)
     setStartX(e.touches[0].clientX)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return
+    if (!isDragging || phase !== 'idle') return
     const x = e.touches[0].clientX
     const delta = x - startX
     setOffsetX(delta)
   }
 
   const handleTouchEnd = () => {
+    if (!isDragging || phase !== 'idle') return
     setIsDragging(false)
     if (offsetX > SWIPE_THRESHOLD) {
       goPrev()
@@ -101,18 +181,19 @@ export default function SwipePage() {
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (phase !== 'idle') return
     setIsDragging(true)
     setStartX(e.clientX)
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return
+    if (!isDragging || phase !== 'idle') return
     const delta = e.clientX - startX
     setOffsetX(delta)
   }
 
   const handleMouseUp = () => {
-    if (!isDragging) return
+    if (!isDragging || phase !== 'idle') return
     setIsDragging(false)
     if (offsetX > SWIPE_THRESHOLD) {
       goPrev()
@@ -132,26 +213,16 @@ export default function SwipePage() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [goNext, goPrev])
 
-  const formatDate = (entry: DiaryEntry) => {
-    return `${entry.year}年${entry.month}月${entry.date.split('-')[2].replace(/^0/, '')}日`
-  }
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'repost': return '转发'
-      case 'reply': return '回复'
-      default: return '原创'
-    }
-  }
-
-  const cardStyle: React.CSSProperties = {
-    transform: `translateX(${offsetX}px) rotate(${offsetX * 0.04}deg)`,
-    transition: isDragging ? 'none' : 'transform 0.3s ease-out',
-    opacity: direction ? 0 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab',
-  }
-
   const overlayOpacity = Math.min(Math.abs(offsetX) / SWIPE_THRESHOLD, 1)
+
+  const currentCardStyle: React.CSSProperties =
+    phase === 'idle'
+      ? {
+          transform: `translateX(${offsetX}px) rotate(${offsetX * 0.03}deg)`,
+          transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }
+      : {}
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
@@ -216,58 +287,44 @@ export default function SwipePage() {
             </div>
           </div>
 
-          {/* 卡片 */}
-          <div
-            className="w-full max-w-md bg-[var(--card-bg)] rounded-2xl border border-[var(--border)] shadow-xl p-6 sm:p-8 relative z-10 select-none"
-            style={cardStyle}
-          >
-            {/* 分享按钮 */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setShareEntry(currentEntry)
-              }}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          {/* 卡片堆叠 */}
+          <div className="relative w-full max-w-md aspect-[3/4] sm:aspect-[4/5] max-h-[70vh]">
+            {/* 入场卡片 */}
+            {phase === 'exiting' && pendingEntry && (
+              <div
+                className={`absolute inset-0 z-0 ${
+                  slideDir === 'left' ? 'animate-slide-in-right' : 'animate-slide-in-left'
+                }`}
+              >
+                <Card
+                  entry={pendingEntry}
+                  onShare={(e) => {
+                    e.stopPropagation()
+                    setShareEntry(pendingEntry)
+                  }}
+                />
+              </div>
+            )}
+
+            {/* 当前卡片 */}
+            <div
+              className={`absolute inset-0 z-10 ${
+                phase === 'exiting'
+                  ? slideDir === 'left'
+                    ? 'animate-slide-out-left'
+                    : 'animate-slide-out-right'
+                  : ''
+              }`}
+              style={currentCardStyle}
             >
-              <svg className="w-5 h-5 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-            </button>
-
-            {/* 日期和编号 */}
-            <div className="flex items-center gap-2 mb-6 text-sm text-[var(--secondary)]">
-              <span>{formatDate(currentEntry)}</span>
-              <span>·</span>
-              <span>#{currentEntry.num}</span>
-              <span>·</span>
-              <span className="text-[var(--primary)]">{getTypeLabel(currentEntry.type)}</span>
+              <Card
+                entry={currentEntry}
+                onShare={(e) => {
+                  e.stopPropagation()
+                  setShareEntry(currentEntry)
+                }}
+              />
             </div>
-
-            {/* 内容 */}
-            <p className="text-xl sm:text-2xl leading-relaxed mb-8 font-medium break-words">
-              {currentEntry.content}
-            </p>
-
-            {/* 标签 */}
-            {currentEntry.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {currentEntry.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className={`tag ${tagClassMap[tag] || 'tag-life'} text-xs`}
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* 额外信息 */}
-            {currentEntry.extraInfo && (
-              <div className="mt-6 pt-4 border-t border-[var(--border)] text-sm text-[var(--secondary)]">
-                {currentEntry.extraInfo}
-              </div>
-            )}
           </div>
         </div>
 
@@ -276,7 +333,7 @@ export default function SwipePage() {
           <div className="flex items-center justify-center gap-6">
             <button
               onClick={goPrev}
-              disabled={currentIndex === 0}
+              disabled={currentIndex === 0 || phase !== 'idle'}
               className="w-14 h-14 rounded-full bg-[var(--card-bg)] border border-[var(--border)] flex items-center justify-center shadow-sm disabled:opacity-40 active:scale-95 transition-all"
             >
               <svg className="w-6 h-6 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,7 +348,7 @@ export default function SwipePage() {
 
             <button
               onClick={goNext}
-              disabled={currentIndex === entries.length - 1}
+              disabled={currentIndex === entries.length - 1 || phase !== 'idle'}
               className="w-14 h-14 rounded-full bg-[var(--card-bg)] border border-[var(--border)] flex items-center justify-center shadow-sm disabled:opacity-40 active:scale-95 transition-all"
             >
               <svg className="w-6 h-6 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
