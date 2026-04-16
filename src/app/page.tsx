@@ -306,7 +306,7 @@ export default function HomePage() {
                           )}
                         </span>
                       </div>
-                      <p className="text-sm sm:text-base leading-relaxed mb-3">
+                      <p className="text-sm sm:text-base leading-relaxed mb-3 break-words">
                         {entry.content}
                       </p>
                       {entry.tags.length > 0 && (
