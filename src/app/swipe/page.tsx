@@ -111,6 +111,8 @@ export default function SwipePage() {
   const [offsetX, setOffsetX] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [startX, setStartX] = useState(0)
+  const [startY, setStartY] = useState(0)
+  const [isVerticalScroll, setIsVerticalScroll] = useState(false)
 
   const [phase, setPhase] = useState<'idle' | 'exiting'>('idle')
   const [slideDir, setSlideDir] = useState<'left' | 'right'>('left')
@@ -158,14 +160,29 @@ export default function SwipePage() {
   const handleTouchStart = (e: React.TouchEvent) => {
     if (phase !== 'idle') return
     setIsDragging(true)
+    setIsVerticalScroll(false)
     setStartX(e.touches[0].clientX)
+    setStartY(e.touches[0].clientY)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || phase !== 'idle') return
     const x = e.touches[0].clientX
-    const delta = x - startX
-    setOffsetX(delta)
+    const y = e.touches[0].clientY
+    const deltaX = x - startX
+    const deltaY = y - startY
+
+    // If vertical movement dominates, cancel drag and allow scrolling
+    if (!isVerticalScroll && Math.abs(deltaY) > Math.abs(deltaX)) {
+      setIsVerticalScroll(true)
+      setIsDragging(false)
+      setOffsetX(0)
+      return
+    }
+
+    if (isVerticalScroll) return
+
+    setOffsetX(deltaX)
   }
 
   const handleTouchEnd = () => {
