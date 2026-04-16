@@ -318,6 +318,7 @@ export default function SwipePage() {
             {/* 入场卡片 */}
             {phase === 'exiting' && pendingEntry && (
               <div
+                key={pendingEntry.id}
                 className={`absolute inset-0 z-0 ${
                   slideDir === 'left' ? 'animate-slide-in-right' : 'animate-slide-in-left'
                 }`}
@@ -334,6 +335,7 @@ export default function SwipePage() {
 
             {/* 当前卡片 */}
             <div
+              key={currentEntry.id}
               className="absolute inset-0 z-10"
               style={currentCardStyle}
             >
