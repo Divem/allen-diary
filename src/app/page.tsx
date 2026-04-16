@@ -478,7 +478,7 @@ export default function HomePage() {
           {/* 侧边栏 - 移动端为右侧抽屉，桌面端为固定侧栏 */}
           <aside
             className={`
-              fixed lg:static inset-y-0 right-0 z-50 lg:z-0 w-80 max-w-[85vw]
+              fixed lg:sticky lg:top-20 lg:self-start lg:h-fit inset-y-0 right-0 z-50 lg:z-0 w-80 max-w-[85vw]
               bg-[var(--background)] lg:bg-transparent
               border-l border-[var(--border)] lg:border-0
               overflow-y-auto lg:overflow-visible
@@ -503,7 +503,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="p-4 lg:p-0 space-y-4 lg:space-y-6 lg:sticky lg:top-24">
+            <div className="p-4 lg:p-0 space-y-4 lg:space-y-6">
               {/* 时间轴 */}
               <div className="bg-[var(--card-bg)] rounded-xl p-3 sm:p-4 border border-[var(--border)]">
                 <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm sm:text-base">
