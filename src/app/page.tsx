@@ -77,6 +77,7 @@ export default function HomePage() {
   const [showFilters, setShowFilters] = useState(false)
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
+  const [currentTargetIndex, setCurrentTargetIndex] = useState(0)
   const [activeShareId, setActiveShareId] = useState<number | null>(null)
   const entryRefs = useRef<Record<number, HTMLElement | null>>({})
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null)
@@ -141,39 +142,52 @@ export default function HomePage() {
   // 所有标签
   const allTags = statsData.tags as string[]
 
-  // 过滤后的条目
+  // 过滤后的条目（仅搜索过滤，月份/标签不再过滤内容）
   const filteredEntries = useMemo(() => {
     let entries: DiaryEntry[] = diaryData as DiaryEntry[]
 
-    // 按月份筛选
-    if (selectedMonth !== 'all') {
-      entries = entriesByMonth[selectedMonth] || []
-    }
-
-    // 按标签筛选
-    if (selectedTags.size > 0) {
-      entries = entries.filter(entry =>
-        entry.tags.some(tag => selectedTags.has(tag))
-      )
-    }
-
-    // 按搜索筛选
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
-      entries = entries.filter(entry =>
+      entries = entries.filter((entry) =>
         entry.content.toLowerCase().includes(query)
       )
     }
 
     return entries
-  }, [selectedMonth, selectedTags, searchQuery, entriesByMonth, diaryData])
+  }, [searchQuery, diaryData])
 
-  // 搜索/筛选变化时重置匹配索引
+  // 索引目标条目（月份/标签用于索引定位）
+  const targetEntries = useMemo(() => {
+    let entries = filteredEntries
+
+    if (selectedMonth !== 'all') {
+      entries = entries.filter(
+        (entry) =>
+          `${entry.year}-${String(entry.month).padStart(2, '0')}` ===
+          selectedMonth
+      )
+    }
+
+    if (selectedTags.size > 0) {
+      entries = entries.filter((entry) =>
+        entry.tags.some((tag) => selectedTags.has(tag))
+      )
+    }
+
+    return entries
+  }, [filteredEntries, selectedMonth, selectedTags])
+
+  // 搜索变化时重置匹配索引
   useEffect(() => {
     setCurrentMatchIndex(0)
-  }, [searchQuery, selectedMonth, selectedTags])
+  }, [searchQuery])
 
-  // 当前匹配变化时滚动到对应条目（仅在搜索时）
+  // 筛选条件变化时重置目标索引
+  useEffect(() => {
+    setCurrentTargetIndex(0)
+  }, [selectedMonth, selectedTags])
+
+  // 当前搜索匹配变化时滚动到对应条目
   useEffect(() => {
     if (!searchQuery.trim()) return
     const entry = filteredEntries[currentMatchIndex]
@@ -184,6 +198,17 @@ export default function HomePage() {
     }
   }, [currentMatchIndex, searchQuery, filteredEntries])
 
+  // 当前筛选目标变化时滚动到对应条目
+  useEffect(() => {
+    if (targetEntries.length === 0 || targetEntries.length === filteredEntries.length) return
+    const entry = targetEntries[currentTargetIndex]
+    if (!entry) return
+    const el = entryRefs.current[entry.id]
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [currentTargetIndex, targetEntries, filteredEntries])
+
   const gotoPrevMatch = () => {
     if (filteredEntries.length === 0) return
     setCurrentMatchIndex((i) => (i - 1 + filteredEntries.length) % filteredEntries.length)
@@ -192,6 +217,16 @@ export default function HomePage() {
   const gotoNextMatch = () => {
     if (filteredEntries.length === 0) return
     setCurrentMatchIndex((i) => (i + 1) % filteredEntries.length)
+  }
+
+  const gotoPrevTarget = () => {
+    if (targetEntries.length === 0) return
+    setCurrentTargetIndex((i) => (i - 1 + targetEntries.length) % targetEntries.length)
+  }
+
+  const gotoNextTarget = () => {
+    if (targetEntries.length === 0) return
+    setCurrentTargetIndex((i) => (i + 1) % targetEntries.length)
   }
 
   const closeMobileSearch = () => {
@@ -208,6 +243,7 @@ export default function HomePage() {
       newTags.add(tag)
     }
     setSelectedTags(newTags)
+    setCurrentTargetIndex(0)
   }
 
   // 清除筛选
@@ -215,6 +251,8 @@ export default function HomePage() {
     setSelectedMonth('all')
     setSelectedTags(new Set())
     setSearchQuery('')
+    setCurrentMatchIndex(0)
+    setCurrentTargetIndex(0)
   }
 
   // 格式化日期显示
@@ -350,40 +388,76 @@ export default function HomePage() {
 
       </header>
 
-      {/* 搜索结果导航条 - sticky 紧贴 header 下方 */}
-      {searchQuery.trim() && (
+      {/* 搜索/索引导航条 - sticky 紧贴 header 下方 */}
+      {(searchQuery.trim() || (targetEntries.length > 0 && targetEntries.length !== filteredEntries.length)) && (
         <div className="sticky top-14 sm:top-16 z-40 bg-[var(--background)]/95 backdrop-blur-xl border-b border-[var(--border)]">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-2 flex items-center justify-between gap-3">
-            <span className="text-sm text-[var(--secondary)] min-w-0 truncate">
-              {filteredEntries.length > 0 ? (
-                <>
-                  找到 <b className="text-[var(--foreground)]">{filteredEntries.length}</b> 条 · 第{' '}
-                  <b className="text-[var(--primary)]">{currentMatchIndex + 1}</b> 条
-                </>
-              ) : (
-                <>无匹配结果</>
-              )}
-            </span>
-            {filteredEntries.length > 0 && (
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={gotoPrevMatch}
-                  className="p-2 rounded-lg text-[var(--secondary)] hover:bg-[var(--card-hover)] active:scale-95 transition-all"
-                  aria-label="上一条"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
-                  </svg>
-                </button>
-                <button
-                  onClick={gotoNextMatch}
-                  className="p-2 rounded-lg text-[var(--secondary)] hover:bg-[var(--card-hover)] active:scale-95 transition-all"
-                  aria-label="下一条"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-2 space-y-1">
+            {/* 搜索导航 */}
+            {searchQuery.trim() && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-[var(--secondary)] min-w-0 truncate">
+                  {filteredEntries.length > 0 ? (
+                    <>
+                      搜索到 <b className="text-[var(--foreground)]">{filteredEntries.length}</b> 条 · 第{' '}
+                      <b className="text-[var(--primary)]">{currentMatchIndex + 1}</b> 条
+                    </>
+                  ) : (
+                    <>无匹配结果</>
+                  )}
+                </span>
+                {filteredEntries.length > 0 && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={gotoPrevMatch}
+                      className="p-2 rounded-lg text-[var(--secondary)] hover:bg-[var(--card-hover)] active:scale-95 transition-all"
+                      aria-label="上一条"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={gotoNextMatch}
+                      className="p-2 rounded-lg text-[var(--secondary)] hover:bg-[var(--card-hover)] active:scale-95 transition-all"
+                      aria-label="下一条"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {/* 筛选索引导航 */}
+            {targetEntries.length > 0 && targetEntries.length !== filteredEntries.length && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-[var(--secondary)] min-w-0 truncate">
+                  定位到 <b className="text-[var(--foreground)]">{targetEntries.length}</b> 条 · 第{' '}
+                  <b className="text-[var(--primary)]">{currentTargetIndex + 1}</b> 条
+                  {selectedMonth !== 'all' && <span> · {formatMonth(selectedMonth)}</span>}
+                  {selectedTags.size > 0 && <span> · {selectedTags.size} 个标签</span>}
+                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={gotoPrevTarget}
+                    className="p-2 rounded-lg text-[var(--secondary)] hover:bg-[var(--card-hover)] active:scale-95 transition-all"
+                    aria-label="上一条"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={gotoNextTarget}
+                    className="p-2 rounded-lg text-[var(--secondary)] hover:bg-[var(--card-hover)] active:scale-95 transition-all"
+                    aria-label="下一条"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -439,6 +513,7 @@ export default function HomePage() {
                   <button
                     onClick={() => {
                       setSelectedMonth('all')
+                      setCurrentTargetIndex(0)
                       setShowFilters(false)
                     }}
                     className={`month-item w-full text-left text-sm ${selectedMonth === 'all' ? 'active' : ''}`}
@@ -450,6 +525,7 @@ export default function HomePage() {
                       key={month}
                       onClick={() => {
                         setSelectedMonth(month)
+                        setCurrentTargetIndex(0)
                         setShowFilters(false)
                       }}
                       className={`month-item w-full text-left text-sm ${selectedMonth === month ? 'active' : ''}`}
@@ -493,9 +569,10 @@ export default function HomePage() {
             {/* 状态栏 */}
             <div className="mb-4 sm:mb-6 flex items-center justify-between">
               <div className="text-[var(--secondary)] text-sm">
-                显示 {filteredEntries.length} 条
-                {selectedMonth !== 'all' && <span> · {formatMonth(selectedMonth)}</span>}
-                {selectedTags.size > 0 && <span> · {selectedTags.size} 个标签</span>}
+                共 {filteredEntries.length} 条
+                {targetEntries.length > 0 && targetEntries.length !== filteredEntries.length && (
+                  <span> · 定位 {targetEntries.length} 条</span>
+                )}
               </div>
               {(selectedMonth !== 'all' || selectedTags.size > 0 || searchQuery) && (
                 <button
@@ -510,9 +587,13 @@ export default function HomePage() {
             {/* 日记卡片流 - 移动端卡片布局 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
               {filteredEntries.map((entry, index) => {
-                const isCurrentMatch =
+                const isSearchMatch =
                   !!searchQuery.trim() &&
                   filteredEntries[currentMatchIndex]?.id === entry.id
+                const isTargetMatch =
+                  targetEntries.length > 0 &&
+                  targetEntries.length !== filteredEntries.length &&
+                  targetEntries[currentTargetIndex]?.id === entry.id
                 return (
                 <article
                   key={entry.id}
@@ -521,7 +602,7 @@ export default function HomePage() {
                   }}
                   onClick={() => setActiveShareId(entry.id)}
                   className={`diary-card animate-fade-in group relative p-4 sm:p-6 scroll-mt-28 sm:scroll-mt-32 ${
-                    isCurrentMatch ? 'ring-2 ring-[var(--primary)] border-[var(--primary)]' : ''
+                    isSearchMatch || isTargetMatch ? 'ring-2 ring-[var(--primary)] border-[var(--primary)]' : ''
                   }`}
                   style={{ animationDelay: `${Math.min(index * 20, 500)}ms` }}
                 >
