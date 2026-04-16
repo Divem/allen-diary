@@ -130,11 +130,11 @@ export default function SwipePage() {
       setPendingIndex(currentIndex + 1)
       setSlideDir('left')
       setPhase('exiting')
-      setOffsetX(0)
       setTimeout(() => {
         setCurrentIndex(i => i + 1)
         setPhase('idle')
         setPendingIndex(null)
+        setOffsetX(0)
       }, ANIMATION_DURATION)
     } else {
       setOffsetX(0)
@@ -146,11 +146,11 @@ export default function SwipePage() {
       setPendingIndex(currentIndex - 1)
       setSlideDir('right')
       setPhase('exiting')
-      setOffsetX(0)
       setTimeout(() => {
         setCurrentIndex(i => i - 1)
         setPhase('idle')
         setPendingIndex(null)
+        setOffsetX(0)
       }, ANIMATION_DURATION)
     } else {
       setOffsetX(0)
@@ -232,14 +232,23 @@ export default function SwipePage() {
 
   const overlayOpacity = Math.min(Math.abs(offsetX) / SWIPE_THRESHOLD, 1)
 
-  const currentCardStyle: React.CSSProperties =
-    phase === 'idle'
-      ? {
-          transform: `translateX(${offsetX}px) rotate(${offsetX * 0.03}deg)`,
-          transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-          cursor: isDragging ? 'grabbing' : 'grab',
-        }
-      : {}
+  const currentCardStyle: React.CSSProperties = (() => {
+    if (phase === 'idle') {
+      return {
+        transform: `translateX(${offsetX}px) rotate(${offsetX * 0.03}deg)`,
+        transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: isDragging ? 'grabbing' : 'grab',
+      }
+    }
+    // exiting phase: continue from current dragged position to off-screen
+    return {
+      transform:
+        slideDir === 'left'
+          ? 'translateX(-130%) rotate(-8deg)'
+          : 'translateX(130%) rotate(8deg)',
+      transition: 'transform 0.32s cubic-bezier(0.33, 1, 0.68, 1)',
+    }
+  })()
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
@@ -325,13 +334,7 @@ export default function SwipePage() {
 
             {/* 当前卡片 */}
             <div
-              className={`absolute inset-0 z-10 ${
-                phase === 'exiting'
-                  ? slideDir === 'left'
-                    ? 'animate-slide-out-left'
-                    : 'animate-slide-out-right'
-                  : ''
-              }`}
+              className="absolute inset-0 z-10"
               style={currentCardStyle}
             >
               <Card
