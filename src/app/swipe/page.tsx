@@ -240,13 +240,12 @@ export default function SwipePage() {
         cursor: isDragging ? 'grabbing' : 'grab',
       }
     }
-    // exiting phase: continue from current dragged position to off-screen
+    // exiting phase: old card stays underneath, new card slides in on top
     return {
-      transform:
-        slideDir === 'left'
-          ? 'translateX(-130%) rotate(-8deg)'
-          : 'translateX(130%) rotate(8deg)',
-      transition: 'transform 0.32s cubic-bezier(0.33, 1, 0.68, 1)',
+      transform: 'translateX(0) rotate(0deg)',
+      opacity: 1,
+      transition: 'transform 0.2s ease-out',
+      zIndex: 0,
     }
   })()
 
@@ -319,7 +318,7 @@ export default function SwipePage() {
             {phase === 'exiting' && pendingEntry && (
               <div
                 key={pendingEntry.id}
-                className={`absolute inset-0 z-0 ${
+                className={`absolute inset-0 z-10 ${
                   slideDir === 'left' ? 'animate-slide-in-right' : 'animate-slide-in-left'
                 }`}
               >
