@@ -91,6 +91,16 @@ export default function HomePage() {
     }
   }, [isMobileSearchOpen])
 
+  // 移动端筛选抽屉打开时锁定 body 滚动
+  useEffect(() => {
+    if (!showFilters) return
+    const original = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = original
+    }
+  }, [showFilters])
+
   // 按月分组
   const entriesByMonth = useMemo(() => {
     const grouped: Record<string, DiaryEntry[]> = {}
@@ -360,18 +370,56 @@ export default function HomePage() {
       )}
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+        {/* 移动端抽屉遮罩 */}
+        {showFilters && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40 animate-fade-in"
+            onClick={() => setShowFilters(false)}
+            aria-hidden="true"
+          />
+        )}
+
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-          {/* 左侧边栏 - 桌面端显示 / 移动端抽屉 */}
-          <aside className={`${showFilters ? 'block' : 'hidden'} lg:block w-full lg:w-72 flex-shrink-0`}>
-            <div className="lg:sticky lg:top-24 space-y-4 lg:space-y-6">
+          {/* 侧边栏 - 移动端为右侧抽屉，桌面端为固定侧栏 */}
+          <aside
+            className={`
+              fixed lg:static inset-y-0 right-0 z-50 w-80 max-w-[85vw]
+              bg-[var(--background)] lg:bg-transparent
+              border-l border-[var(--border)] lg:border-0
+              overflow-y-auto lg:overflow-visible
+              transition-transform duration-300 ease-out
+              lg:transition-none lg:translate-x-0
+              lg:w-72 lg:max-w-none lg:flex-shrink-0
+              ${showFilters ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}
+            `}
+            aria-hidden={!showFilters ? undefined : false}
+          >
+            {/* 抽屉头部 - 仅移动端 */}
+            <div className="lg:hidden sticky top-0 z-10 bg-[var(--background)]/95 backdrop-blur-xl border-b border-[var(--border)] px-4 py-3 flex items-center justify-between">
+              <h2 className="font-semibold text-base">筛选</h2>
+              <button
+                onClick={() => setShowFilters(false)}
+                aria-label="关闭筛选"
+                className="-mr-2 p-2 rounded-full hover:bg-[var(--card-hover)] transition-colors"
+              >
+                <svg className="w-5 h-5 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-4 lg:p-0 space-y-4 lg:space-y-6 lg:sticky lg:top-24">
               {/* 时间轴 */}
               <div className="bg-[var(--card-bg)] rounded-xl p-3 sm:p-4 border border-[var(--border)]">
                 <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm sm:text-base">
                   <span>📅</span> 时间轴
                 </h3>
-                <div className="space-y-1 max-h-48 lg:max-h-80 overflow-y-auto">
+                <div className="space-y-1">
                   <button
-                    onClick={() => setSelectedMonth('all')}
+                    onClick={() => {
+                      setSelectedMonth('all')
+                      setShowFilters(false)
+                    }}
                     className={`month-item w-full text-left text-sm ${selectedMonth === 'all' ? 'active' : ''}`}
                   >
                     全部 ({diaryData.length})
@@ -379,7 +427,10 @@ export default function HomePage() {
                   {months.map(month => (
                     <button
                       key={month}
-                      onClick={() => setSelectedMonth(month)}
+                      onClick={() => {
+                        setSelectedMonth(month)
+                        setShowFilters(false)
+                      }}
                       className={`month-item w-full text-left text-sm ${selectedMonth === month ? 'active' : ''}`}
                     >
                       {formatMonth(month)} ({entriesByMonth[month].length})
