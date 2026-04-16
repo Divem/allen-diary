@@ -383,7 +383,7 @@ export default function HomePage() {
           {/* 侧边栏 - 移动端为右侧抽屉，桌面端为固定侧栏 */}
           <aside
             className={`
-              fixed lg:static inset-y-0 right-0 z-50 w-80 max-w-[85vw]
+              fixed lg:static inset-y-0 right-0 z-50 lg:z-0 w-80 max-w-[85vw]
               bg-[var(--background)] lg:bg-transparent
               border-l border-[var(--border)] lg:border-0
               overflow-y-auto lg:overflow-visible

@@ -14,25 +14,23 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
   const cardRef = useRef<HTMLDivElement>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  // 格式化日期和时间
   const formatDateTime = (dateStr: string, timeStr: string) => {
     const [year, month, day] = dateStr.split('-')
     const time = timeStr.split(' ')[1]
     return `${year}.${parseInt(month)}.${parseInt(day)} ${time}`
   }
 
-  // 获取标签颜色
   const getTagColor = (tag: string) => {
     const colors: Record<string, string> = {
       '产品哲学': '#FF6B6B',
       '用户洞察': '#4ECDC4',
       '互联网思考': '#45B7D1',
       '技术观点': '#96CEB4',
-      '读书笔记': '#FFEAA7',
+      '读书笔记': '#F59E0B',
       '生活随笔': '#DDA0DD',
       '幽默段子': '#FF8C94',
-      '转发引用': '#87CEEB',
-      '饭否相关': '#FFA07A',
+      '转发引用': '#60A5FA',
+      '饭否相关': '#FB923C',
       '苹果相关': '#6B7280',
       'Google': '#EF4444',
       '微信相关': '#10B981',
@@ -42,7 +40,6 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
     return colors[tag] || '#6B7280'
   }
 
-  // 下载图片
   const handleDownload = async () => {
     if (!cardRef.current || isDownloading) return
 
@@ -56,11 +53,10 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
       }
 
       const element = cardRef.current
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise((resolve) => setTimeout(resolve, 300))
 
-      // 使用更高的 scale 提高清晰度
       const canvas = await html2canvas(element, {
-        scale: 4, // 提高到 4 倍清晰度
+        scale: 4,
         backgroundColor: '#ffffff',
         logging: false,
         useCORS: true,
@@ -69,7 +65,7 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
 
       const link = document.createElement('a')
       link.download = `allen-diary-${date}.png`
-      link.href = canvas.toDataURL('image/png', 1.0) // 最高质量
+      link.href = canvas.toDataURL('image/png', 1.0)
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -83,86 +79,100 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-lg w-full shadow-2xl animate-fade-in">
-        <div className="flex items-center justify-between mb-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[var(--card-bg)] text-[var(--foreground)] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-fade-in border border-[var(--border)]">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold">分享卡片</h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[var(--card-hover)] transition-colors text-[var(--secondary)]"
+            aria-label="关闭"
           >
-            ✕
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        {/* 卡片预览 */}
-        <div className="mb-4 flex justify-center">
+        {/* Card Preview */}
+        <div className="mb-6 flex justify-center">
           <div
             ref={cardRef}
             style={{
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-              backgroundColor: '#ffffff',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
               width: '360px',
-              borderRadius: '16px',
+              borderRadius: '20px',
               overflow: 'hidden',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+              background: 'linear-gradient(180deg, #ffffff 0%, #fafafa 100%)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.04)',
             }}
           >
-            {/* 顶部信息区 */}
-            <div style={{ padding: '24px 24px 16px 24px', backgroundColor: '#ffffff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #F472B6, #FB923C)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#ffffff',
-                      fontSize: '14px',
-                      fontWeight: 'bold',
-                      flexShrink: 0,
-                    }}
-                  >
-                    龙
+            {/* Top accent bar */}
+            <div
+              style={{
+                height: '3px',
+                width: '100%',
+                background: 'linear-gradient(90deg, #F472B6, #FB923C)',
+              }}
+            />
+
+            {/* Header */}
+            <div style={{ padding: '28px 28px 20px 28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #F472B6, #FB923C)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    flexShrink: 0,
+                  }}
+                >
+                  龙
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>
+                    张小龙
                   </div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', lineHeight: '1.2' }}>张小龙</div>
-                    <div style={{ fontSize: '12px', color: '#9CA3AF', lineHeight: '1.2' }}>饭否日记</div>
+                  <div style={{ fontSize: '12px', color: '#9CA3AF', lineHeight: 1.3, marginTop: '2px' }}>
+                    饭否日记
                   </div>
                 </div>
-                <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '500', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 500, whiteSpace: 'nowrap' }}>
                   {formatDateTime(date, timestamp)}
                 </div>
               </div>
             </div>
 
-            {/* 内容区 */}
-            <div style={{ padding: '0 24px 20px 24px', backgroundColor: '#ffffff' }}>
+            {/* Content */}
+            <div style={{ padding: '0 28px 28px 28px' }}>
               <p
                 style={{
-                  fontSize: '15px',
-                  lineHeight: '1.6',
-                  whiteSpace: 'pre-wrap',
-                  fontWeight: '500',
+                  fontSize: '17px',
+                  lineHeight: 1.75,
+                  fontWeight: 500,
                   color: '#1F2937',
                   wordBreak: 'break-word',
                   overflowWrap: 'break-word',
+                  letterSpacing: '0.01em',
+                  margin: 0,
                 }}
               >
                 {content}
               </p>
-            </div>
 
-            {/* 底部信息 */}
-            <div style={{ padding: '0 24px 20px 24px', backgroundColor: '#ffffff' }}>
-              {/* 标签 */}
+              {/* Tags */}
               {tags.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
-                  {tags.slice(0, 2).map((tag, index) => (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '20px' }}>
+                  {tags.slice(0, 3).map((tag, index) => (
                     <span
                       key={index}
                       style={{
@@ -171,11 +181,11 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
                         padding: '4px 10px',
                         borderRadius: '9999px',
                         fontSize: '11px',
-                        fontWeight: '500',
+                        fontWeight: 500,
                         color: '#ffffff',
                         backgroundColor: getTagColor(tag),
                         whiteSpace: 'nowrap',
-                        lineHeight: '1',
+                        lineHeight: 1,
                       }}
                     >
                       #{tag}
@@ -184,21 +194,31 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
                 </div>
               )}
 
-              {/* 分隔线和 @gzallen */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                <div style={{ height: '1px', flex: '1', background: 'linear-gradient(90deg, transparent, #E5E7EB)' }}></div>
-                <div style={{ fontSize: '11px', color: '#D1D5DB', whiteSpace: 'nowrap', fontWeight: '500' }}>@gzallen</div>
-                <div style={{ height: '1px', flex: '1', background: 'linear-gradient(90deg, #E5E7EB, transparent)' }}></div>
+              {/* Footer */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  marginTop: '24px',
+                }}
+              >
+                <div style={{ height: '1px', flex: 1, background: '#E5E7EB' }} />
+                <div style={{ fontSize: '11px', color: '#9CA3AF', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                  @gzallen
+                </div>
+                <div style={{ height: '1px', flex: 1, background: '#E5E7EB' }} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* 操作按钮 */}
+        {/* Actions */}
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-colors font-medium"
           >
             取消
           </button>
