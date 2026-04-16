@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import diaryData from '@/data/diary.json'
 import statsData from '@/data/stats.json'
 import ShareCard from '@/components/ShareCard'
@@ -166,6 +167,17 @@ export default function HomePage() {
                 />
                 <span className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-[var(--secondary)] text-sm">🔍</span>
               </div>
+              {/* 卡片模式入口 */}
+              <Link
+                href="/swipe"
+                className="p-2 rounded-lg bg-[var(--card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
+                title="卡片模式"
+              >
+                <svg className="w-5 h-5 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </Link>
+
               {/* 移动端筛选按钮 */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
