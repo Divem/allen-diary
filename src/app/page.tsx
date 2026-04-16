@@ -1,11 +1,40 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import diaryData from '@/data/diary.json'
 import statsData from '@/data/stats.json'
 import ShareCard from '@/components/ShareCard'
 import ThemeToggle from '@/components/ThemeToggle'
+
+// 高亮匹配文本
+function highlightText(text: string, query: string): React.ReactNode {
+  const q = query.trim()
+  if (!q) return text
+  const result: React.ReactNode[] = []
+  const lower = text.toLowerCase()
+  const qLower = q.toLowerCase()
+  let i = 0
+  let key = 0
+  while (i < text.length) {
+    const idx = lower.indexOf(qLower, i)
+    if (idx === -1) {
+      result.push(text.slice(i))
+      break
+    }
+    if (idx > i) result.push(text.slice(i, idx))
+    result.push(
+      <mark
+        key={key++}
+        className="bg-yellow-200 dark:bg-yellow-500/40 text-[var(--foreground)] rounded px-0.5"
+      >
+        {text.slice(idx, idx + q.length)}
+      </mark>
+    )
+    i = idx + q.length
+  }
+  return <>{result}</>
+}
 
 interface DiaryEntry {
   id: number
@@ -46,10 +75,21 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [shareEntry, setShareEntry] = useState<DiaryEntry | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
+  const entryRefs = useRef<Record<number, HTMLElement | null>>({})
+  const mobileSearchInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     setIsLoading(false)
   }, [])
+
+  // 进入搜索模式后自动聚焦输入框
+  useEffect(() => {
+    if (isMobileSearchOpen) {
+      mobileSearchInputRef.current?.focus()
+    }
+  }, [isMobileSearchOpen])
 
   // 按月分组
   const entriesByMonth = useMemo(() => {
@@ -96,6 +136,37 @@ export default function HomePage() {
 
     return entries
   }, [selectedMonth, selectedTags, searchQuery, entriesByMonth, diaryData])
+
+  // 搜索/筛选变化时重置匹配索引
+  useEffect(() => {
+    setCurrentMatchIndex(0)
+  }, [searchQuery, selectedMonth, selectedTags])
+
+  // 当前匹配变化时滚动到对应条目（仅在搜索时）
+  useEffect(() => {
+    if (!searchQuery.trim()) return
+    const entry = filteredEntries[currentMatchIndex]
+    if (!entry) return
+    const el = entryRefs.current[entry.id]
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [currentMatchIndex, searchQuery, filteredEntries])
+
+  const gotoPrevMatch = () => {
+    if (filteredEntries.length === 0) return
+    setCurrentMatchIndex((i) => (i - 1 + filteredEntries.length) % filteredEntries.length)
+  }
+
+  const gotoNextMatch = () => {
+    if (filteredEntries.length === 0) return
+    setCurrentMatchIndex((i) => (i + 1) % filteredEntries.length)
+  }
+
+  const closeMobileSearch = () => {
+    setIsMobileSearchOpen(false)
+    setSearchQuery('')
+  }
 
   // 切换标签
   const toggleTag = (tag: string) => {
@@ -146,27 +217,78 @@ export default function HomePage() {
       {/* 顶部导航 */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--background)]/80 backdrop-blur-xl border-b border-[var(--border)]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16">
-            <div className="flex items-center gap-2 sm:gap-3">
+          {/* 手机端搜索模式 - 仅在 sm 以下且开启搜索时显示 */}
+          {isMobileSearchOpen && (
+            <div className="flex sm:hidden items-center gap-2 h-14">
+              <button
+                onClick={closeMobileSearch}
+                className="p-2 -ml-2 rounded-full hover:bg-[var(--card-hover)] transition-colors shrink-0"
+                aria-label="关闭搜索"
+              >
+                <svg className="w-5 h-5 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
+              <div className="relative flex-1 min-w-0">
+                <input
+                  ref={mobileSearchInputRef}
+                  type="search"
+                  enterKeyHint="search"
+                  placeholder="搜索日记..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-9 py-2 rounded-full bg-[var(--card-hover)] border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                  style={{ fontSize: '16px' }}
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--secondary)]">🔍</span>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-[var(--secondary)] hover:bg-[var(--border)]"
+                    aria-label="清空"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 常规 header - 桌面总是显示；手机端搜索模式下隐藏 */}
+          <div className={`${isMobileSearchOpen ? 'hidden sm:flex' : 'flex'} items-center justify-between h-14 sm:h-16`}>
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="text-xl sm:text-2xl">📔</div>
-              <div>
-                <h1 className="text-base sm:text-xl font-bold">张小龙饭否日记</h1>
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl font-bold truncate">张小龙饭否日记</h1>
                 <p className="text-xs text-[var(--secondary)] hidden sm:block">
                   我所说的，都是错的
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="relative">
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              {/* 桌面端搜索框 */}
+              <div className="relative hidden sm:block">
                 <input
-                  type="text"
+                  type="search"
                   placeholder="搜索..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-32 sm:w-64 px-3 sm:px-4 py-1.5 sm:py-2 pl-8 sm:pl-10 rounded-full bg-[var(--card-hover)] border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] text-sm"
+                  className="w-64 px-4 py-2 pl-10 rounded-full bg-[var(--card-hover)] border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] text-sm"
                 />
-                <span className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-[var(--secondary)] text-sm">🔍</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--secondary)] text-sm">🔍</span>
               </div>
+
+              {/* 手机端搜索图标按钮 */}
+              <button
+                onClick={() => setIsMobileSearchOpen(true)}
+                className="sm:hidden p-2 rounded-lg bg-[var(--card-hover)] border border-[var(--border)]"
+                aria-label="搜索"
+              >
+                <svg className="w-5 h-5 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+
               {/* 卡片模式入口 */}
               <Link
                 href="/swipe"
@@ -182,6 +304,7 @@ export default function HomePage() {
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="lg:hidden p-2 rounded-lg bg-[var(--card-hover)] border border-[var(--border)]"
+                aria-label="筛选"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -193,7 +316,48 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+
       </header>
+
+      {/* 搜索结果导航条 - sticky 紧贴 header 下方 */}
+      {searchQuery.trim() && (
+        <div className="sticky top-14 sm:top-16 z-40 bg-[var(--background)]/95 backdrop-blur-xl border-b border-[var(--border)]">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-2 flex items-center justify-between gap-3">
+            <span className="text-sm text-[var(--secondary)] min-w-0 truncate">
+              {filteredEntries.length > 0 ? (
+                <>
+                  找到 <b className="text-[var(--foreground)]">{filteredEntries.length}</b> 条 · 第{' '}
+                  <b className="text-[var(--primary)]">{currentMatchIndex + 1}</b> 条
+                </>
+              ) : (
+                <>无匹配结果</>
+              )}
+            </span>
+            {filteredEntries.length > 0 && (
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={gotoPrevMatch}
+                  className="p-2 rounded-lg text-[var(--secondary)] hover:bg-[var(--card-hover)] active:scale-95 transition-all"
+                  aria-label="上一条"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={gotoNextMatch}
+                  className="p-2 rounded-lg text-[var(--secondary)] hover:bg-[var(--card-hover)] active:scale-95 transition-all"
+                  aria-label="下一条"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
@@ -273,10 +437,19 @@ export default function HomePage() {
 
             {/* 日记卡片流 - 移动端卡片布局 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
-              {filteredEntries.map((entry, index) => (
+              {filteredEntries.map((entry, index) => {
+                const isCurrentMatch =
+                  !!searchQuery.trim() &&
+                  filteredEntries[currentMatchIndex]?.id === entry.id
+                return (
                 <article
                   key={entry.id}
-                  className="diary-card animate-fade-in group relative p-4 sm:p-6"
+                  ref={(el) => {
+                    entryRefs.current[entry.id] = el
+                  }}
+                  className={`diary-card animate-fade-in group relative p-4 sm:p-6 scroll-mt-28 sm:scroll-mt-32 ${
+                    isCurrentMatch ? 'ring-2 ring-[var(--primary)] border-[var(--primary)]' : ''
+                  }`}
                   style={{ animationDelay: `${Math.min(index * 20, 500)}ms` }}
                 >
                   {/* 分享按钮 */}
@@ -319,7 +492,7 @@ export default function HomePage() {
                         </span>
                       </div>
                       <p className="text-sm sm:text-base leading-relaxed mb-3 break-words">
-                        {entry.content}
+                        {highlightText(entry.content, searchQuery)}
                       </p>
                       {entry.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -337,7 +510,8 @@ export default function HomePage() {
                     </div>
                   </div>
                 </article>
-              ))}
+                )
+              })}
             </div>
 
             {/* 空状态 */}
