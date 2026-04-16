@@ -77,8 +77,10 @@ export default function HomePage() {
   const [showFilters, setShowFilters] = useState(false)
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
+  const [activeShareId, setActiveShareId] = useState<number | null>(null)
   const entryRefs = useRef<Record<number, HTMLElement | null>>({})
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null)
+  const shareBtnContainerRefs = useRef<Record<number, HTMLButtonElement | null>>({})
 
   useEffect(() => {
     setIsLoading(false)
@@ -100,6 +102,25 @@ export default function HomePage() {
       document.body.style.overflow = original
     }
   }, [showFilters])
+
+  // 点击页面其他地方隐藏移动端分享按钮
+  useEffect(() => {
+    if (activeShareId === null) return
+    const handleDocClick = (e: MouseEvent) => {
+      const target = e.target as Node
+      const activeBtn = shareBtnContainerRefs.current[activeShareId]
+      const activeArticle = entryRefs.current[activeShareId]
+      if (
+        activeBtn?.contains(target) ||
+        activeArticle?.contains(target)
+      ) {
+        return
+      }
+      setActiveShareId(null)
+    }
+    document.addEventListener('click', handleDocClick)
+    return () => document.removeEventListener('click', handleDocClick)
+  }, [activeShareId])
 
   // 按月分组
   const entriesByMonth = useMemo(() => {
@@ -498,6 +519,7 @@ export default function HomePage() {
                   ref={(el) => {
                     entryRefs.current[entry.id] = el
                   }}
+                  onClick={() => setActiveShareId(entry.id)}
                   className={`diary-card animate-fade-in group relative p-4 sm:p-6 scroll-mt-28 sm:scroll-mt-32 ${
                     isCurrentMatch ? 'ring-2 ring-[var(--primary)] border-[var(--primary)]' : ''
                   }`}
@@ -505,8 +527,16 @@ export default function HomePage() {
                 >
                   {/* 分享按钮 */}
                   <button
-                    onClick={() => setShareEntry(entry)}
-                    className="absolute top-3 right-3 sm:top-4 sm:right-4 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                    ref={(el) => {
+                      shareBtnContainerRefs.current[entry.id] = el
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShareEntry(entry)
+                    }}
+                    className={`absolute top-3 right-3 sm:top-4 sm:right-4 transition-opacity p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                      activeShareId === entry.id ? 'opacity-100' : 'opacity-0'
+                    } lg:opacity-0 lg:group-hover:opacity-100`}
                     title="分享卡片"
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -551,7 +581,10 @@ export default function HomePage() {
                             <span
                               key={tag}
                               className={`tag ${tagClassMap[tag] || 'tag-life'} text-xs cursor-pointer hover:opacity-80`}
-                              onClick={() => toggleTag(tag)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleTag(tag)
+                              }}
                             >
                               #{tag}
                             </span>

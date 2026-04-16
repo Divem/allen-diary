@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import diaryData from '@/data/diary.json'
 import ShareCard from '@/components/ShareCard'
@@ -124,6 +124,44 @@ export default function SwipePage() {
   const pendingEntry = pendingIndex !== null ? entries[pendingIndex] : null
 
   const ANIMATION_DURATION = 320
+
+  // 长按连续切换
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
+  const longPressInterval = useRef<NodeJS.Timeout | null>(null)
+  const isLongPress = useRef(false)
+
+  const clearLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+    if (longPressInterval.current) {
+      clearInterval(longPressInterval.current)
+      longPressInterval.current = null
+    }
+    isLongPress.current = false
+  }
+
+  const startLongPress = (direction: 'prev' | 'next') => {
+    isLongPress.current = false
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true
+      const action = direction === 'prev' ? goPrev : goNext
+      action()
+      longPressInterval.current = setInterval(() => {
+        action()
+      }, 280)
+    }, 450)
+  }
+
+  const handlePressEnd = (direction: 'prev' | 'next') => {
+    const wasLongPress = isLongPress.current
+    clearLongPress()
+    if (!wasLongPress) {
+      if (direction === 'prev') goPrev()
+      else goNext()
+    }
+  }
 
   const goNext = useCallback(() => {
     if (currentIndex < entries.length - 1 && phase === 'idle') {
@@ -353,9 +391,13 @@ export default function SwipePage() {
         <div className="px-6 pb-8 pt-2">
           <div className="flex items-center justify-center gap-6">
             <button
-              onClick={goPrev}
               disabled={currentIndex === 0 || phase !== 'idle'}
-              className="w-14 h-14 rounded-full bg-[var(--card-bg)] border border-[var(--border)] flex items-center justify-center shadow-sm disabled:opacity-40 active:scale-95 transition-all"
+              onMouseDown={() => startLongPress('prev')}
+              onMouseUp={() => handlePressEnd('prev')}
+              onMouseLeave={clearLongPress}
+              onTouchStart={() => startLongPress('prev')}
+              onTouchEnd={() => handlePressEnd('prev')}
+              className="w-14 h-14 rounded-full bg-[var(--card-bg)] border border-[var(--border)] flex items-center justify-center shadow-sm disabled:opacity-40 active:scale-95 transition-all select-none"
             >
               <svg className="w-6 h-6 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -368,9 +410,13 @@ export default function SwipePage() {
             </div>
 
             <button
-              onClick={goNext}
               disabled={currentIndex === entries.length - 1 || phase !== 'idle'}
-              className="w-14 h-14 rounded-full bg-[var(--card-bg)] border border-[var(--border)] flex items-center justify-center shadow-sm disabled:opacity-40 active:scale-95 transition-all"
+              onMouseDown={() => startLongPress('next')}
+              onMouseUp={() => handlePressEnd('next')}
+              onMouseLeave={clearLongPress}
+              onTouchStart={() => startLongPress('next')}
+              onTouchEnd={() => handlePressEnd('next')}
+              className="w-14 h-14 rounded-full bg-[var(--card-bg)] border border-[var(--border)] flex items-center justify-center shadow-sm disabled:opacity-40 active:scale-95 transition-all select-none"
             >
               <svg className="w-6 h-6 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
