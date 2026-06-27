@@ -18,6 +18,7 @@
 .DS_Store
 *.pem
 .superpowers/
+.playwright-cli/
 
 # debug
 npm-debug.log*

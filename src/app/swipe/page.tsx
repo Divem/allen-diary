@@ -5,6 +5,7 @@ import Link from 'next/link'
 import diaryData from '@/data/diary.json'
 import ShareCard from '@/components/ShareCard'
 import ThemeToggle from '@/components/ThemeToggle'
+import { BottomTabBar } from '@/components/MobileChrome'
 
 interface DiaryEntry {
   id: number
@@ -63,6 +64,7 @@ function Card({
       <button
         onClick={onShare}
         className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10"
+        aria-label="分享"
       >
         <svg className="w-5 h-5 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -124,6 +126,15 @@ export default function SwipePage() {
   const pendingEntry = pendingIndex !== null ? entries[pendingIndex] : null
 
   const ANIMATION_DURATION = 320
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const entryId = Number(params.get('entry'))
+    if (!entryId) return
+
+    const index = entries.findIndex((entry) => entry.id === entryId)
+    if (index >= 0) setCurrentIndex(index)
+  }, [entries])
 
   // 长按连续切换
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
@@ -298,21 +309,19 @@ export default function SwipePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
-            <span className="text-base font-semibold">卡片模式</span>
+            <span className="text-base font-semibold">卡片</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-[var(--secondary)]">
               {currentIndex + 1} / {entries.length}
             </span>
-            <div className="hidden sm:block">
-              <ThemeToggle />
-            </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>
 
       {/* 主卡片区 */}
-      <main className="flex-1 relative overflow-hidden flex flex-col">
+      <main className="flex-1 relative overflow-hidden flex flex-col pb-20">
         {/* 进度条 */}
         <div className="w-full h-1 bg-[var(--border)]">
           <div
@@ -388,7 +397,7 @@ export default function SwipePage() {
         </div>
 
         {/* 底部控制区 */}
-        <div className="px-6 pb-8 pt-2">
+        <div className="px-6 pb-6 pt-2">
           <div className="flex items-center justify-center gap-6">
             <button
               disabled={currentIndex === 0 || phase !== 'idle'}
@@ -405,7 +414,7 @@ export default function SwipePage() {
             </button>
 
             <div className="text-center">
-              <div className="text-xs text-[var(--secondary)] mb-1">左右滑动切换</div>
+              <div className="text-xs text-[var(--secondary)] mb-1">查看前后内容</div>
               <div className="text-sm font-medium">{currentIndex + 1} / {entries.length}</div>
             </div>
 
@@ -436,6 +445,7 @@ export default function SwipePage() {
           onClose={() => setShareEntry(null)}
         />
       )}
+      <BottomTabBar />
     </div>
   )
 }

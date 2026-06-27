@@ -13,6 +13,7 @@ interface ShareCardProps {
 export default function ShareCard({ content, date, timestamp, tags, onClose }: ShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
 
   const formatDateTime = (dateStr: string, timeStr: string) => {
     const [year, month, day] = dateStr.split('-')
@@ -78,10 +79,27 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
     }
   }
 
+  const handleCopy = async () => {
+    const text = `${content}\n\n${formatDateTime(date, timestamp)} · 张小龙饭否日记`
+
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyStatus('copied')
+      window.setTimeout(() => setCopyStatus('idle'), 1600)
+    } catch {
+      setCopyStatus('failed')
+      window.setTimeout(() => setCopyStatus('idle'), 1600)
+    }
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col" onClick={onClose}>
-      {/* 顶部关闭按钮 */}
-      <div className="flex items-center justify-end px-4 pt-4 pb-2">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      {/* 顶部栏 */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2 text-white">
+        <div>
+          <h2 className="text-base font-semibold">分享预览</h2>
+          <p className="text-xs text-white/60">长按图片也可保存</p>
+        </div>
         <button
           onClick={onClose}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-black/20 text-white hover:bg-black/30 transition-colors"
@@ -213,18 +231,28 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
         </div>
       </div>
 
-      {/* 底部弱化的操作栏 */}
-      <div className="px-4 pb-6 pt-2 flex items-center justify-center gap-6 text-sm" onClick={(e) => e.stopPropagation()}>
+      {/* 底部操作栏 */}
+      <div className="px-4 pb-6 pt-2 grid grid-cols-3 gap-2 text-sm" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onClose}
-          className="px-4 py-2 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+          className="px-4 py-3 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
         >
-          关闭
+          返回阅读
+        </button>
+        <button
+          onClick={handleCopy}
+          className="px-4 py-3 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+        >
+          {copyStatus === 'copied'
+            ? '已复制'
+            : copyStatus === 'failed'
+              ? '复制失败'
+              : '复制文字'}
         </button>
         <button
           onClick={handleDownload}
           disabled={isDownloading}
-          className="px-4 py-2 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+          className="px-4 py-3 rounded-full bg-white text-gray-900 hover:bg-white/90 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
         >
           {isDownloading ? (
             <>
@@ -234,7 +262,7 @@ export default function ShareCard({ content, date, timestamp, tags, onClose }: S
           ) : (
             <>
               <span>⬇️</span>
-              下载
+              保存图片
             </>
           )}
         </button>
