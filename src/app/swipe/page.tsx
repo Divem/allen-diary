@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import diaryData from '@/data/diary.json'
 import ShareCard from '@/components/ShareCard'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -39,6 +40,137 @@ const tagClassMap: Record<string, string> = {
 }
 
 const SWIPE_THRESHOLD = 80
+
+function resolveInitialIndex(entries: DiaryEntry[], search: string): number {
+  const params = new URLSearchParams(search)
+
+  const entryId = Number(params.get('entry'))
+  if (entryId) {
+    const index = entries.findIndex((entry) => entry.id === entryId)
+    if (index >= 0) return index
+  }
+
+  const dateParam = params.get('date')
+  if (dateParam) {
+    const matched = entries.filter((entry) => entry.date === dateParam)
+    if (matched.length > 0) {
+      // Show the newest entry of that day so the user can swipe to older ones.
+      const newest = matched.reduce((a, b) => (a.num > b.num ? a : b))
+      const index = entries.findIndex((entry) => entry.id === newest.id)
+      if (index >= 0) return index
+    }
+  }
+
+  const pageParam = Number(params.get('page'))
+  if (pageParam && !Number.isNaN(pageParam)) {
+    const index = Math.max(0, Math.min(entries.length - 1, pageParam - 1))
+    return index
+  }
+
+  return 0
+}
+
+function JumpDialog({
+  isOpen,
+  onClose,
+  onJump,
+  total,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onJump: (type: 'date' | 'page', value: string) => void
+  total: number
+}) {
+  const [mode, setMode] = useState<'date' | 'page'>('date')
+  const [value, setValue] = useState('')
+
+  useEffect(() => {
+    if (isOpen) {
+      setValue('')
+      setMode('date')
+    }
+  }, [isOpen])
+
+  if (!isOpen) return null
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = value.trim()
+    if (!trimmed) return
+    onJump(mode, trimmed)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl bg-[var(--card-bg)] border border-[var(--border)] p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold mb-4">跳转到</h3>
+
+        <div className="flex gap-2 mb-4 p-1 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+          <button
+            type="button"
+            onClick={() => setMode('date')}
+            className={`flex-1 py-2 text-sm rounded-lg transition-colors ${
+              mode === 'date'
+                ? 'bg-[var(--primary)] text-white'
+                : 'text-[var(--secondary)] hover:bg-[var(--card-hover)]'
+            }`}
+          >
+            日期
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('page')}
+            className={`flex-1 py-2 text-sm rounded-lg transition-colors ${
+              mode === 'page'
+                ? 'bg-[var(--primary)] text-white'
+                : 'text-[var(--secondary)] hover:bg-[var(--card-hover)]'
+            }`}
+          >
+            页码
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <label className="block text-sm text-[var(--secondary)] mb-2">
+            {mode === 'date' ? '日期（YYYY-MM-DD）' : `页码（1 - ${total}）`}
+          </label>
+          <input
+            type={mode === 'date' ? 'date' : 'number'}
+            min={mode === 'page' ? 1 : undefined}
+            max={mode === 'page' ? total : undefined}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+            placeholder={mode === 'date' ? '2010-11-26' : '1'}
+            autoFocus
+          />
+          <div className="flex gap-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-[var(--border)] text-[var(--secondary)] hover:bg-[var(--card-hover)] transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={!value.trim()}
+              className="flex-1 py-2.5 rounded-xl bg-[var(--primary)] text-white font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+            >
+              跳转
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
 
 function Card({
   entry,
@@ -128,13 +260,27 @@ export default function SwipePage() {
   const ANIMATION_DURATION = 320
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const entryId = Number(params.get('entry'))
-    if (!entryId) return
-
-    const index = entries.findIndex((entry) => entry.id === entryId)
-    if (index >= 0) setCurrentIndex(index)
+    const index = resolveInitialIndex(entries, window.location.search)
+    if (index > 0) setCurrentIndex(index)
   }, [entries])
+
+  const router = useRouter()
+  const [isJumpOpen, setIsJumpOpen] = useState(false)
+
+  const handleJump = useCallback((type: 'date' | 'page', value: string) => {
+    const params = new URLSearchParams(window.location.search)
+    params.delete('entry')
+    params.delete('date')
+    params.delete('page')
+    params.set(type, value)
+    router.replace(`/swipe?${params.toString()}`, { scroll: false })
+    setIsJumpOpen(false)
+
+    const index = resolveInitialIndex(entries, `?${params.toString()}`)
+    if (index !== currentIndex) {
+      setCurrentIndex(index)
+    }
+  }, [entries, currentIndex, router])
 
   // 长按连续切换
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
@@ -312,6 +458,16 @@ export default function SwipePage() {
             <span className="text-base font-semibold">卡片</span>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsJumpOpen(true)}
+              className="p-2 rounded-full hover:bg-[var(--card-hover)] transition-colors"
+              aria-label="跳转"
+              title="跳转到指定日期或页码"
+            >
+              <svg className="w-5 h-5 text-[var(--secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
             <span className="text-sm text-[var(--secondary)]">
               {currentIndex + 1} / {entries.length}
             </span>
@@ -445,6 +601,13 @@ export default function SwipePage() {
           onClose={() => setShareEntry(null)}
         />
       )}
+
+      <JumpDialog
+        isOpen={isJumpOpen}
+        onClose={() => setIsJumpOpen(false)}
+        onJump={handleJump}
+        total={entries.length}
+      />
       <BottomTabBar />
     </div>
   )
