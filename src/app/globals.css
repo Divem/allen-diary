@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --background: #fafafa;
   --foreground: #1a1a1a;
   --card-bg: #ffffff;
@@ -11,11 +12,38 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #0a0a0a;
   --foreground: #e5e5e5;
   --card-bg: #1a1a1a;
   --card-hover: #262626;
   --border: #262626;
+  --primary: #38bdf8;
+  --secondary: #94a3b8;
+}
+
+/* 护眼：暖色纸质背景，长时间阅读更舒适 */
+.sepia {
+  color-scheme: light;
+  --background: #f4ecd8;
+  --foreground: #5b4636;
+  --card-bg: #faf3e0;
+  --card-hover: #efe6cf;
+  --border: #e0d4b3;
+  --primary: #b45309;
+  --secondary: #8a7355;
+}
+
+/* 墨绿：深色系护眼绿，沉静阅读 */
+.forest {
+  color-scheme: dark;
+  --background: #0f1a14;
+  --foreground: #d4e4d8;
+  --card-bg: #16241c;
+  --card-hover: #1d2f25;
+  --border: #24382c;
+  --primary: #34d399;
+  --secondary: #7ea890;
 }
 
 html, body {
@@ -96,21 +124,21 @@ body {
 .tag-philosophy { background: #faf5ff; color: #6d28d9; }
 .tag-management { background: #f0fdfa; color: #0f766e; }
 
-/* 深色模式标签 */
-.dark .tag-product { background: rgb(30 58 138 / 0.3); color: rgb(147 197 253); }
-.dark .tag-insight { background: rgb(88 28 135 / 0.3); color: rgb(216 180 254); }
-.dark .tag-internet { background: rgb(22 101 52 / 0.3); color: rgb(134 239 172); }
-.dark .tag-tech { background: rgb(22 78 99 / 0.3); color: rgb(165 243 252); }
-.dark .tag-book { background: rgb(120 53 15 / 0.3); color: rgb(253 230 138); }
-.dark .tag-life { background: rgb(31 41 55); color: rgb(209 213 219); }
-.dark .tag-humor { background: rgb(190 24 93 / 0.3); color: rgb(251 207 232); }
-.dark .tag-repost { background: rgb(55 48 163 / 0.3); color: rgb(196 181 254); }
-.dark .tag-fanfou { background: rgb(194 65 12 / 0.3); color: rgb(253 186 116); }
-.dark .tag-apple { background: rgb(30 41 59); color: rgb(203 213 225); }
-.dark .tag-google { background: rgb(127 29 29 / 0.3); color: rgb(254 202 202); }
-.dark .tag-wechat { background: rgb(6 95 70 / 0.3); color: rgb(167 243 208); }
-.dark .tag-philosophy { background: rgb(88 28 135 / 0.3); color: rgb(216 180 254); }
-.dark .tag-management { background: rgb(19 78 74 / 0.3); color: rgb(153 246 228); }
+/* 深色系主题（深色 / 墨绿）标签 */
+.dark .tag-product, .forest .tag-product { background: rgb(30 58 138 / 0.3); color: rgb(147 197 253); }
+.dark .tag-insight, .forest .tag-insight { background: rgb(88 28 135 / 0.3); color: rgb(216 180 254); }
+.dark .tag-internet, .forest .tag-internet { background: rgb(22 101 52 / 0.3); color: rgb(134 239 172); }
+.dark .tag-tech, .forest .tag-tech { background: rgb(22 78 99 / 0.3); color: rgb(165 243 252); }
+.dark .tag-book, .forest .tag-book { background: rgb(120 53 15 / 0.3); color: rgb(253 230 138); }
+.dark .tag-life, .forest .tag-life { background: rgb(31 41 55); color: rgb(209 213 219); }
+.dark .tag-humor, .forest .tag-humor { background: rgb(190 24 93 / 0.3); color: rgb(251 207 232); }
+.dark .tag-repost, .forest .tag-repost { background: rgb(55 48 163 / 0.3); color: rgb(196 181 254); }
+.dark .tag-fanfou, .forest .tag-fanfou { background: rgb(194 65 12 / 0.3); color: rgb(253 186 116); }
+.dark .tag-apple, .forest .tag-apple { background: rgb(30 41 59); color: rgb(203 213 225); }
+.dark .tag-google, .forest .tag-google { background: rgb(127 29 29 / 0.3); color: rgb(254 202 202); }
+.dark .tag-wechat, .forest .tag-wechat { background: rgb(6 95 70 / 0.3); color: rgb(167 243 208); }
+.dark .tag-philosophy, .forest .tag-philosophy { background: rgb(88 28 135 / 0.3); color: rgb(216 180 254); }
+.dark .tag-management, .forest .tag-management { background: rgb(19 78 74 / 0.3); color: rgb(153 246 228); }
 
 /* 日记卡片 */
 .diary-card {
